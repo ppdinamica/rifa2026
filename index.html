@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Publicación de Eventos</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    input, textarea, button {
+      display: block;
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      font-size: 1rem;
+    }
+    #resultado {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>📢 Publicar evento</h1>
+  <form id="formulario">
+    <input type="text" name="distrito" placeholder="Distrito" required>
+    <input type="text" name="grupo" placeholder="Grupo" required>
+    <input type="text" name="ciudad" placeholder="Ciudad" required>
+    <input type="date" name="fecha" required>
+    <textarea name="descripcion" placeholder="Descripción del evento" required></textarea>
+    <input type="file" name="imagen" accept="image/*" required>
+    <button type="submit">Publicar</button>
+  </form>
+  <div id="resultado"></div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhcmXRXwaGVNYxtNymhdQmQQrHSd-REv3H1G-1sws5ICZqZ33jRbiYLOLDRv1_LuWI/exec";
+    const form = document.getElementById('formulario');
+    const resultado = document.getElementById('resultado');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultado.textContent = '⏳ Enviando...';
+
+      const datos = new FormData(form);
+      const archivo = datos.get('imagen');
+      const lector = new FileReader();
+
+      lector.onload = async function () {
+        const imagenBase64 = lector.result.split(',')[1]; // quitar el encabezado
+        const payload = {
+          distrito: datos.get('distrito'),
+          grupo: datos.get('grupo'),
+          ciudad: datos.get('ciudad'),
+          fecha: datos.get('fecha'),
+          descripcion: datos.get('descripcion'),
+          imagenBase64
+        };
+
+        try {
+          const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.ok) throw new Error(await res.text());
+          const result = await res.json();
+          if (result.status === 'ok') {
+            resultado.innerHTML = `✅ Publicado correctamente.<br><img src="${result.imagen}" style="max-width:100%">`;
+            form.reset();
+          } else {
+            resultado.textContent = "❌ Error: " + result.message;
+          }
+        } catch (error) {
+          resultado.textContent = "❌ Error de conexión: " + error.message;
+        }
+      };
+
+      lector.readAsDataURL(archivo);
+    });
+  </script>
+</body>
+</html>
