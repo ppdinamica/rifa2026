@@ -1,87 +1,756 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Publicación de Eventos</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
-    }
-    input, textarea, button {
-      display: block;
-      width: 100%;
-      margin-bottom: 15px;
-      padding: 10px;
-      font-size: 1rem;
-    }
-    #resultado {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rifa Entre Amigos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent:#5b9bd5; --accent2:#a8c8f0; --bright:#e8f4ff;
+    --bg:#06090f; --card:#0d1520; --card2:#111d2e;
+    --border:#2a4060; --text-dim:#6888a8; --text-mid:#8aaad0;
+    /* Por confirmar: amarillo */
+    --pc-bg:#1a1400; --pc-border:#c89020; --pc-color:#f0c040;
+    /* Confirmado: azul */
+    --co-bg:#0a1525; --co-border:#3a6abf; --co-color:#70a8f0;
+    /* Pagado: verde */
+    --pa-bg:#0a1f0f; --pa-border:#2a7a3a; --pa-color:#5ecf7a;
+    /* Seleccionado: naranja */
+    --sel-bg:#1a0f00; --sel-border:#d4740a; --sel-color:#f0a040;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg);
+    background-image:radial-gradient(ellipse at 20% 20%,#0d2040 0%,transparent 60%),
+                     radial-gradient(ellipse at 80% 80%,#0a1830 0%,transparent 60%);
+    display:flex; justify-content:center; align-items:flex-start;
+    min-height:100vh; padding:12px; font-family:'Nunito',sans-serif;
+    padding-bottom:110px;
+  }
+  .card { background:var(--card); border:1.5px solid var(--border); border-radius:24px; padding:20px 16px; max-width:640px; width:100%; box-shadow:0 0 80px rgba(91,155,213,0.1),0 24px 48px rgba(0,0,0,0.6); }
+  .header { text-align:center; margin-bottom:18px; }
+  .badge { display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#1a3a6a,#0d2550); border:1px solid var(--accent); color:var(--accent2); font-size:10px; font-weight:900; letter-spacing:3px; text-transform:uppercase; padding:5px 16px; border-radius:20px; margin-bottom:10px; }
+  h1 { font-family:'Playfair Display',serif; font-size:38px; color:var(--bright); letter-spacing:2px; line-height:1; }
+  .subtitle { color:var(--text-mid); font-size:13px; margin-top:8px; }
+  .prize { background:linear-gradient(135deg,#0d2040,#091828); border:1px solid var(--accent); border-radius:14px; padding:12px 20px; text-align:center; margin-bottom:18px; }
+  .prize-label { color:var(--text-dim); font-size:10px; letter-spacing:3px; text-transform:uppercase; }
+  .prize-value { color:var(--bright); font-size:16px; font-weight:900; margin-top:4px; }
+  .prize-sub { color:var(--accent2); font-size:12px; margin-top:3px; }
+  .conexion { display:flex; align-items:center; justify-content:center; gap:6px; font-size:11px; color:var(--text-dim); margin-bottom:14px; }
+  .dot-conexion { width:8px; height:8px; border-radius:50%; background:#888; transition:background 0.3s; }
+  .dot-conexion.online { background:#4caf50; box-shadow:0 0 6px #4caf50; }
+  .dot-conexion.offline { background:#e74c3c; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:18px; }
+  .stat { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:8px 4px; text-align:center; min-width:0; }
+  .stat-num { font-size:20px; font-weight:900; color:var(--accent); }
+  .stat-label { font-size:8px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+  .sel-hint { text-align:center; font-size:12px; color:var(--text-dim); margin-bottom:10px; transition:all 0.3s; }
+  .sel-hint.activo { color:var(--sel-color); }
+  .grid { display:grid; grid-template-columns:repeat(10,1fr); gap:5px; margin-bottom:14px; }
+  .num { aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; user-select:none; position:relative; }
+  .num.available { background:var(--card2); border:1.5px solid var(--border); color:var(--text-mid); }
+  .num.available:hover { border-color:var(--accent); color:var(--accent); transform:scale(1.12); z-index:1; }
+  .num.selected { background:var(--sel-bg); border:2px solid var(--sel-border); color:var(--sel-color); transform:scale(1.1); z-index:2; box-shadow:0 0 10px rgba(106,191,64,0.4); }
+  .num.selected::after { content:'✓'; position:absolute; top:-4px; right:-4px; background:var(--sel-border); color:#fff; font-size:8px; font-weight:900; width:13px; height:13px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .num.porconfirmar { background:var(--pc-bg); border:1.5px solid var(--pc-border); color:var(--pc-color); }
+  .num.porconfirmar:hover { transform:scale(1.08); z-index:1; }
+  .num.confirmado { background:var(--co-bg); border:1.5px solid var(--co-border); color:var(--co-color); }
+  .num.confirmado:hover { transform:scale(1.08); z-index:1; }
+  .num.pagado { background:var(--pa-bg); border:1.5px solid var(--pa-border); color:var(--pa-color); }
+  .num.pagado:hover { transform:scale(1.08); z-index:1; }
+  .grid.bloqueado .num { cursor:not-allowed; opacity:0.7; }
+  .grid.bloqueado .num:hover { transform:none !important; }
+  .legend { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:16px; }
+  .legend-item { display:flex; align-items:center; gap:4px; font-size:10px; color:var(--text-mid); }
+  .ldot { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+  .ldot.available { background:var(--card2); border:1.5px solid var(--border); }
+  .ldot.selected { background:var(--sel-bg); border:1.5px solid var(--sel-border); }
+  .ldot.porconfirmar { background:var(--pc-bg); border:1.5px solid var(--pc-border); }
+  .ldot.confirmado { background:var(--co-bg); border:1.5px solid var(--co-border); }
+  .ldot.pagado { background:var(--pa-bg); border:1.5px solid var(--pa-border); }
+  .actions { display:flex; gap:10px; margin-bottom:14px; }
+  .action-btn { flex:1; padding:11px 14px; border-radius:12px; font-family:'Nunito',sans-serif; font-weight:900; font-size:13px; cursor:pointer; border:none; transition:all 0.2s; line-height:1.3; }
+  .action-btn:hover { opacity:0.85; transform:translateY(-1px); }
+  .btn-lista { background:var(--card2); color:var(--text-mid); border:1.5px solid var(--border); }
+  .btn-sorteo { background:linear-gradient(135deg,var(--accent),#3a7abf); color:#fff; }
+  .footer { text-align:center; color:var(--text-dim); font-size:11px; border-top:1px solid var(--border); padding-top:14px; }
+  /* Banner rifa cerrada */
+  .banner-cerrada { display:none; background:linear-gradient(135deg,#1a0a00,#2a1000); border:2px solid #c89020; border-radius:16px; padding:20px; text-align:center; margin-bottom:16px; }
+  .banner-cerrada.visible { display:block; }
+  .banner-cerrada h3 { font-family:'Playfair Display',serif; color:#f0c040; font-size:22px; margin-bottom:8px; }
+  .banner-ganador-num { font-family:'Playfair Display',serif; font-size:80px; color:var(--pa-color); line-height:1; margin:8px 0; }
+  .banner-ganador-nombre { font-size:20px; font-weight:900; color:var(--bright); margin-bottom:8px; }
+  .banner-fecha { font-size:16px; color:var(--text-mid); font-weight:700; margin-top:4px; }
+  /* Barra flotante */
+  .barra-flotante { position:fixed; bottom:0; left:0; right:0; z-index:50; background:linear-gradient(135deg,#1a0f00,#120a00); border-top:2px solid var(--sel-border); padding:14px 20px; display:none; flex-direction:column; align-items:center; gap:10px; box-shadow:0 -8px 30px rgba(0,0,0,0.6); }
+  .barra-flotante.visible { display:flex; }
+  .barra-nums { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  .barra-chip { background:var(--sel-bg); border:1px solid var(--sel-border); color:var(--sel-color); font-size:12px; font-weight:900; padding:4px 10px; border-radius:20px; display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .barra-chip:hover { opacity:0.7; }
+  .barra-btns { display:flex; gap:10px; width:100%; max-width:360px; }
+  .btn-barra-cancel { flex:1; padding:10px; border-radius:10px; background:var(--card2); color:var(--text-mid); border:1.5px solid var(--border); font-family:'Nunito',sans-serif; font-weight:900; font-size:13px; cursor:pointer; }
+  .btn-barra-confirm { flex:2; padding:10px; border-radius:10px; background:linear-gradient(135deg,#c06010,#a04800); color:#fff; border:none; font-family:'Nunito',sans-serif; font-weight:900; font-size:13px; cursor:pointer; }
+  /* Modales */
+  .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; justify-content:center; align-items:center; padding:20px; }
+  .modal-bg.open { display:flex; }
+  .modal { background:linear-gradient(135deg,#0d1520,#0a1828); border:1.5px solid var(--accent); border-radius:18px; padding:24px; width:100%; max-width:360px; max-height:90vh; overflow-y:auto; }
+  .modal h2 { font-family:'Playfair Display',serif; font-size:24px; color:var(--bright); margin-bottom:14px; text-align:center; }
+  .modal input { width:100%; background:var(--card2); border:1.5px solid var(--border); border-radius:10px; padding:10px 14px; color:#fff; font-family:'Nunito',sans-serif; font-size:14px; margin-bottom:10px; outline:none; transition:border-color 0.2s; }
+  .modal input:focus { border-color:var(--accent); }
+  .modal input::placeholder { color:var(--text-dim); }
+  .btn-row { display:flex; gap:10px; margin-top:6px; }
+  .btn { flex:1; padding:10px; border-radius:10px; font-family:'Nunito',sans-serif; font-weight:900; font-size:14px; cursor:pointer; border:none; transition:opacity 0.2s; }
+  .btn:hover { opacity:0.85; }
+  .btn-confirm { background:linear-gradient(135deg,var(--accent),#3a7abf); color:#fff; }
+  .btn-cancel { background:var(--card2); color:var(--text-mid); border:1.5px solid var(--border); }
+  .err-msg { font-size:11px; color:#e74c3c; text-align:center; margin-top:6px; display:none; }
+  .ok-msg { font-size:11px; color:var(--pa-color); text-align:center; margin-top:4px; display:none; }
+  .estado-badge { display:inline-flex; align-items:center; gap:6px; border-radius:20px; padding:6px 16px; font-size:13px; font-weight:700; margin-bottom:14px; }
+  .estado-badge.porconfirmar { background:var(--pc-bg); border:1px solid var(--pc-border); color:var(--pc-color); }
+  .estado-badge.confirmado { background:var(--co-bg); border:1px solid var(--co-border); color:var(--co-color); }
+  .estado-badge.pagado { background:var(--pa-bg); border:1px solid var(--pa-border); color:var(--pa-color); }
+  .lista-scroll { max-height:260px; overflow-y:auto; margin-bottom:14px; }
+  .lista-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .lista-num { font-weight:900; font-size:11px; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .lista-num.porconfirmar { background:var(--pc-bg); border:1px solid var(--pc-border); color:var(--pc-color); }
+  .lista-num.confirmado { background:var(--co-bg); border:1px solid var(--co-border); color:var(--co-color); }
+  .lista-num.pagado { background:var(--pa-bg); border:1px solid var(--pa-border); color:var(--pa-color); }
+  /* Admin item */
+  .admin-item { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); }
+  .admin-num { font-weight:900; font-size:11px; min-width:28px; height:28px; padding:0 4px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .admin-num.porconfirmar { background:var(--pc-bg); border:1px solid var(--pc-border); color:var(--pc-color); }
+  .admin-num.confirmado { background:var(--co-bg); border:1px solid var(--co-border); color:var(--co-color); }
+  .admin-num.pagado { background:var(--pa-bg); border:1px solid var(--pa-border); color:var(--pa-color); }
+  .admin-btn { border-radius:6px; padding:4px 8px; font-family:'Nunito',sans-serif; font-weight:900; font-size:10px; cursor:pointer; border:none; flex-shrink:0; }
+  .admin-btn.confirmar { background:var(--co-bg); color:var(--co-color); border:1px solid var(--co-border); }
+  .admin-btn.pagar { background:var(--co-bg); color:var(--co-color); border:1px solid var(--co-border); }
+  .admin-btn.liberar { background:#1a0a0a; color:#e07070; border:1px solid #5a2020; }
+  @keyframes pulsar { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.2);opacity:1} 100%{transform:scale(1)} }
+  @keyframes cuentaAnim { 0%{transform:scale(1.5);opacity:0} 15%{transform:scale(1);opacity:1} 80%{transform:scale(1);opacity:1} 100%{transform:scale(0.7);opacity:0} }
+  .cuenta-show { animation:cuentaAnim 0.85s ease forwards; }
+  .loading { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:200; gap:16px; }
+  .loading h2 { color:var(--accent2); font-family:'Playfair Display',serif; font-size:24px; }
+  .spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+</style>
 </head>
 <body>
-  <h1>📢 Publicar evento</h1>
-  <form id="formulario">
-    <input type="text" name="distrito" placeholder="Distrito" required>
-    <input type="text" name="grupo" placeholder="Grupo" required>
-    <input type="text" name="ciudad" placeholder="Ciudad" required>
-    <input type="date" name="fecha" required>
-    <textarea name="descripcion" placeholder="Descripción del evento" required></textarea>
-    <input type="file" name="imagen" accept="image/*" required>
-    <button type="submit">Publicar</button>
-  </form>
-  <div id="resultado"></div>
 
-  <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhcmXRXwaGVNYxtNymhdQmQQrHSd-REv3H1G-1sws5ICZqZ33jRbiYLOLDRv1_LuWI/exec";
-    const form = document.getElementById('formulario');
-    const resultado = document.getElementById('resultado');
+<div class="loading" id="loading"><div class="spinner"></div><h2>Conectando...</h2></div>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      resultado.textContent = '⏳ Enviando...';
+<div class="card">
+  <div class="header">
+    <div class="badge">✦ Rifa Oficial 2026 ✦</div>
+    <h1>RIFA ENTRE AMIGOS</h1>
+    <p class="subtitle">100 boletos · $100 c/u · ¡Gana el compendio!</p>
+  </div>
+  <div class="prize">
+    <div class="prize-label">🏆 Premio</div>
+    <div class="prize-value">Compendio Plenitud — 12 Libros</div>
+    <div class="prize-sub">Cara de Bill y Bob</div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(91,155,213,0.3);color:#8aaad0;font-size:11px;line-height:1.5">
+      🎲 El sorteo se realizará una vez que se vendan todos los boletos
+    </div>
+  </div>
+  <div class="conexion">
+    <div class="dot-conexion" id="dot-conexion"></div>
+    <span id="txt-conexion">Conectando...</span>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="stat-disponibles" style="color:var(--text-mid)">100</div><div class="stat-label">Disponibles</div></div>
+    <div class="stat"><div class="stat-num" id="stat-porconfirmar" style="color:var(--pc-color)">0</div><div class="stat-label">Por confirmar</div></div>
+    <div class="stat"><div class="stat-num" id="stat-confirmados" style="color:var(--co-color)">0</div><div class="stat-label">Confirmados</div></div>
+    <div class="stat"><div class="stat-num" id="stat-pagados" style="color:var(--pa-color)">0</div><div class="stat-label">Pagados</div></div>
+  </div>
 
-      const datos = new FormData(form);
-      const archivo = datos.get('imagen');
-      const lector = new FileReader();
+  <div class="banner-cerrada" id="banner-cerrada">
+    <h3>🔒 ¡Rifa Cerrada!</h3>
+    <div style="color:var(--text-dim);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Número Ganador</div>
+    <div class="banner-ganador-num" id="banner-num"></div>
+    <div class="banner-ganador-nombre" id="banner-nombre"></div>
+    <div class="banner-fecha" id="banner-fecha"></div>
+  </div>
 
-      lector.onload = async function () {
-        const imagenBase64 = lector.result.split(',')[1]; // quitar el encabezado
-        const payload = {
-          distrito: datos.get('distrito'),
-          grupo: datos.get('grupo'),
-          ciudad: datos.get('ciudad'),
-          fecha: datos.get('fecha'),
-          descripcion: datos.get('descripcion'),
-          imagenBase64
-        };
+  <div class="sel-hint" id="sel-hint">Toca un número para seleccionarlo · máx. 5</div>
+  <div class="grid" id="grid"></div>
+  <div class="legend">
+    <div class="legend-item"><div class="ldot available"></div> Disponible</div>
+    <div class="legend-item"><div class="ldot selected"></div> Seleccionado</div>
+    <div class="legend-item"><div class="ldot porconfirmar"></div> Por confirmar</div>
+    <div class="legend-item"><div class="ldot confirmado"></div> Confirmado</div>
+    <div class="legend-item"><div class="ldot pagado"></div> Pagado ✓</div>
+  </div>
+  <div class="actions">
+    <button class="action-btn btn-lista" onclick="abrirLista()">📋 Ver lista</button>
+    <button class="action-btn btn-sorteo" onclick="abrirSorteo()">🎲 Sorteo<span style="font-size:10px;opacity:0.7;font-weight:600;display:block;line-height:1.2">Solo organizador</span></button>
+  </div>
+  <div class="footer">Toca números disponibles para seleccionarlos · máx. 5</div>
+  <div style="text-align:center;margin-top:14px">
+    <span onclick="abrirAdmin()" style="color:var(--text-dim);font-size:11px;cursor:pointer;opacity:0.35;letter-spacing:1px;user-select:none">· admin ·</span>
+  </div>
+</div>
 
-        try {
-          const res = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+<!-- Barra flotante -->
+<div class="barra-flotante" id="barra-flotante">
+  <div id="barra-nums" class="barra-nums"></div>
+  <div class="barra-btns">
+    <button class="btn-barra-cancel" onclick="cancelarSeleccion()">✕ Cancelar</button>
+    <button class="btn-barra-confirm" onclick="abrirConfirmar()">✓ Adquirir <span id="barra-count">0</span> número(s)</button>
+  </div>
+</div>
 
-          if (!res.ok) throw new Error(await res.text());
-          const result = await res.json();
-          if (result.status === 'ok') {
-            resultado.innerHTML = `✅ Publicado correctamente.<br><img src="${result.imagen}" style="max-width:100%">`;
-            form.reset();
-          } else {
-            resultado.textContent = "❌ Error: " + result.message;
-          }
-        } catch (error) {
-          resultado.textContent = "❌ Error de conexión: " + error.message;
-        }
-      };
+<!-- Modal: confirmar compra -->
+<div class="modal-bg" id="modal-comprar">
+  <div class="modal">
+    <h2>Confirmar</h2>
+    <div id="resumen-nums" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px"></div>
+    <p style="color:var(--text-mid);font-size:13px;text-align:center;margin-bottom:12px">¿Cuál es tu nombre?</p>
+    <input type="text" id="input-nombre" placeholder="Tu nombre (opcional)" autocomplete="off" />
+    <div class="btn-row">
+      <button class="btn btn-cancel" onclick="cerrarCompra()">Cancelar</button>
+      <button class="btn btn-confirm" id="btn-adquirir" onclick="adquirirNumeros()">✓ Confirmar</button>
+    </div>
+    <p class="err-msg" id="err-compra">Ocurrió un error, intenta de nuevo</p>
+  </div>
+</div>
 
-      lector.readAsDataURL(archivo);
+<!-- Modal: éxito -->
+<div class="modal-bg" id="modal-exito">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">🎉</div>
+    <h2 style="color:var(--pa-color)">¡Listo!</h2>
+    <p style="color:var(--text-mid);font-size:14px;margin-bottom:16px">Tus números quedaron registrados:</p>
+    <div id="exito-nums" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px"></div>
+    <div id="exito-nombre" style="color:var(--bright);font-size:16px;font-weight:900;margin-bottom:10px"></div>
+    <div style="color:var(--pc-color);font-size:12px;background:var(--pc-bg);border:1px solid var(--pc-border);border-radius:10px;padding:10px;margin-bottom:16px">
+      ⏳ El organizador se pondrá en contacto contigo para confirmar y coordinar el pago.
+    </div>
+    <button class="btn btn-cancel" style="width:100%" onclick="cerrarExito()">← Regresar al tablero</button>
+  </div>
+</div>
+
+<!-- Modal: ver número -->
+<div class="modal-bg" id="modal-ver">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:36px;margin-bottom:6px">🎟️</div>
+    <div style="color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Número</div>
+    <div id="ver-num" style="font-family:'Playfair Display',serif;font-size:64px;color:var(--accent);line-height:1;margin-bottom:10px"></div>
+    <div style="color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Participante</div>
+    <div id="ver-nombre" style="color:var(--bright);font-size:17px;font-weight:900;margin-bottom:14px"></div>
+    <div id="ver-badge" class="estado-badge"></div>
+    <div id="ver-msg" style="color:var(--text-dim);font-size:12px;margin-bottom:8px"></div>
+    <button class="btn btn-cancel" style="width:100%;margin-top:10px" onclick="cerrarVer()">← Regresar</button>
+  </div>
+</div>
+
+<!-- Modal: login admin -->
+<div class="modal-bg" id="modal-admin-login">
+  <div class="modal">
+    <h2>🔐 Admin</h2>
+    <input type="password" id="input-pass-admin" placeholder="Contraseña" />
+    <div class="btn-row">
+      <button class="btn btn-cancel" onclick="document.getElementById('modal-admin-login').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-confirm" onclick="entrarAdmin()">Entrar</button>
+    </div>
+    <p class="err-msg" id="err-admin">Contraseña incorrecta</p>
+  </div>
+</div>
+
+<!-- Panel Admin -->
+<div class="modal-bg" id="modal-panel-admin">
+  <div class="modal">
+    <h2>⚙️ Panel Admin</h2>
+
+    <!-- Lista de números activos -->
+    <p style="color:var(--text-dim);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Gestionar números</p>
+    <div id="admin-lista" style="max-height:280px;overflow-y:auto;margin-bottom:14px"></div>
+
+    <!-- Editar nombre -->
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:4px">
+      <p style="color:var(--text-dim);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">✏️ Corregir nombre</p>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <input type="number" id="input-num-editar" placeholder="Núm." min="1" max="100" style="width:70px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:10px 8px;color:#fff;font-family:'Nunito',sans-serif;font-size:14px;outline:none;margin-bottom:0;flex-shrink:0" />
+        <input type="text" id="input-nombre-editar" placeholder="Nombre correcto" style="flex:1;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:#fff;font-family:'Nunito',sans-serif;font-size:14px;outline:none;margin-bottom:0" />
+      </div>
+      <button class="btn btn-confirm" style="width:100%;margin-bottom:4px" onclick="editarNombre()">✏️ Guardar nombre</button>
+      <p class="err-msg" id="err-editar">Ese número no existe</p>
+      <p class="ok-msg" id="ok-editar">Nombre actualizado ✓</p>
+    </div>
+
+    <!-- Resetear -->
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
+      <p style="color:var(--text-mid);font-size:14px;text-align:center;margin-bottom:6px">🗑️ <strong>Resetear</strong></p>
+      <p style="color:var(--text-dim);font-size:12px;text-align:center;margin-bottom:12px">Borra todos los boletos y desbloquea el tablero para una nueva rifa.</p>
+      <button class="btn" style="width:100%;background:#7a1a1a;color:#ffaaaa;border:1px solid #c0392b" onclick="confirmarReset()">Borrar todo y nueva rifa</button>
+    </div>
+
+    <button class="btn btn-cancel" style="width:100%;margin-top:12px" onclick="document.getElementById('modal-panel-admin').classList.remove('open')">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: lista pública -->
+<div class="modal-bg" id="modal-lista">
+  <div class="modal">
+    <h2>Participantes</h2>
+    <div class="lista-scroll" id="lista-content"></div>
+    <button class="btn btn-cancel" style="width:100%" onclick="document.getElementById('modal-lista').classList.remove('open')">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: sorteo -->
+<div class="modal-bg" id="modal-sorteo">
+  <div class="modal" style="text-align:center">
+    <h2>🎲 Sorteo</h2>
+    <div id="sorteo-inicio">
+      <p style="color:var(--text-mid);font-size:13px;margin-bottom:6px">Solo participan números <strong style="color:var(--pa-color)">pagados</strong>.</p>
+      <p id="sorteo-count" style="color:var(--text-dim);font-size:12px;margin-bottom:14px"></p>
+      <input type="password" id="input-pass-sorteo" placeholder="Contraseña del organizador" style="width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;color:#fff;font-family:'Nunito',sans-serif;font-size:14px;margin-bottom:10px;outline:none" />
+      <p class="err-msg" id="err-sorteo" style="margin-bottom:8px">Contraseña incorrecta</p>
+      <div class="btn-row">
+        <button class="btn btn-cancel" onclick="cerrarSorteo()">Cancelar</button>
+        <button class="btn btn-confirm" onclick="iniciarSorteo()">¡Sortear!</button>
+      </div>
+    </div>
+    <div id="sorteo-cuenta" style="display:none;padding:20px 0">
+      <div id="cuenta-num" style="font-family:'Playfair Display',serif;font-size:110px;color:var(--accent);line-height:1;min-height:130px"></div>
+      <div style="color:var(--text-dim);font-size:12px;margin-top:8px">Preparando sorteo...</div>
+    </div>
+    <div id="sorteo-girando" style="display:none;padding:20px 0">
+      <div style="color:var(--text-dim);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">🎲 Sorteando...</div>
+      <div id="num-girando" style="font-family:'Playfair Display',serif;font-size:90px;color:var(--accent2);line-height:1;min-height:110px"></div>
+    </div>
+    <div id="sorteo-ganador" style="display:none;padding:10px 0">
+      <div style="font-size:28px;margin-bottom:6px">🏆</div>
+      <div style="color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">¡Número Ganador!</div>
+      <div id="winner-num" style="font-family:'Playfair Display',serif;font-size:90px;color:var(--pa-color);line-height:1"></div>
+      <div id="winner-name" style="font-size:20px;font-weight:900;color:var(--bright);margin-top:10px"></div>
+      <div style="color:#7ecfb0;font-size:14px;margin-top:8px">¡Felicidades! 🎉</div>
+      <div id="winner-fecha" style="color:var(--accent2);font-size:18px;font-weight:700;margin-top:10px;margin-bottom:16px;line-height:1.6"></div>
+      <button class="btn btn-cancel" style="width:100%" onclick="cerrarSorteo()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const PASSWORD = "a1234";
+  const MAX_SEL = 5;
+  const HORAS_LIBERAR = 24; // horas antes de liberar "por confirmar"
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAOuwZ5EHhmm0OeApjjyA1XA_l0sIBYvZ0",
+    authDomain: "rifa-grupo-2000.firebaseapp.com",
+    databaseURL: "https://rifa-grupo-2000-default-rtdb.firebaseio.com",
+    projectId: "rifa-grupo-2000",
+    storageBucket: "rifa-grupo-2000.firebasestorage.app",
+    messagingSenderId: "526733735105",
+    appId: "1:526733735105:web:74709db1763474ec251040"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+  const rifaRef = ref(db, 'boletos');
+  const sorteoRef = ref(db, 'sorteo');
+
+  let data = {};
+  let sorteoInfo = null;
+  let seleccionados = new Set();
+  let cargado = false;
+
+  signInAnonymously(auth).catch(e => console.warn('Auth:', e)).finally(() => iniciarEscucha());
+
+  function iniciarEscucha() {
+    onValue(rifaRef, (snap) => {
+      data = snap.val() || {};
+      seleccionados.forEach(n => { if (data[n]) seleccionados.delete(n); });
+      liberarVencidos(); // revisar expirados
+      renderGrid();
+      actualizarBarra();
+      if (!cargado) {
+        cargado = true;
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dot-conexion').classList.add('online');
+        document.getElementById('txt-conexion').textContent = 'En vivo · Tiempo real';
+      }
+    }, () => {
+      document.getElementById('dot-conexion').classList.add('offline');
+      document.getElementById('txt-conexion').textContent = 'Sin conexión';
+      document.getElementById('loading').style.display = 'none';
     });
-  </script>
+
+    onValue(sorteoRef, (snap) => {
+      sorteoInfo = snap.val() || null;
+      actualizarEstadoSorteo();
+    });
+  }
+
+  // Liberar automáticamente los "por confirmar" con más de 24h
+  function liberarVencidos() {
+    const ahora = Date.now();
+    const limite = HORAS_LIBERAR * 60 * 60 * 1000;
+    Object.keys(data).forEach(n => {
+      const e = data[n];
+      if (e && e.estado === 'porconfirmar' && e.timestamp) {
+        if (ahora - e.timestamp > limite) {
+          remove(ref(db, 'boletos/' + n));
+        }
+      }
+    });
+  }
+
+  function estadoClase(e) {
+    if (!e) return 'available';
+    return e.estado || 'porconfirmar';
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    let disp = 0, pc = 0, co = 0, pa = 0;
+    for (let i = 1; i <= 100; i++) {
+      const div = document.createElement('div');
+      const entry = data[i];
+      let clase = 'available';
+      if (seleccionados.has(i)) clase = 'selected';
+      else if (entry) clase = estadoClase(entry);
+      if (clase === 'available') disp++;
+      else if (clase === 'porconfirmar') pc++;
+      else if (clase === 'confirmado') co++;
+      else if (clase === 'pagado') pa++;
+      div.className = 'num ' + clase;
+      div.textContent = i;
+      div.onclick = () => clickNumero(i);
+      grid.appendChild(div);
+    }
+    document.getElementById('stat-disponibles').textContent = disp;
+    document.getElementById('stat-porconfirmar').textContent = pc;
+    document.getElementById('stat-confirmados').textContent = co;
+    document.getElementById('stat-pagados').textContent = pa;
+
+    const hint = document.getElementById('sel-hint');
+    if (seleccionados.size > 0) {
+      hint.textContent = seleccionados.size + ' seleccionado(s) · Toca más o confirma abajo';
+      hint.classList.add('activo');
+    } else {
+      hint.textContent = 'Toca un número para seleccionarlo · máx. ' + MAX_SEL;
+      hint.classList.remove('activo');
+    }
+    if (sorteoInfo) actualizarEstadoSorteo();
+  }
+
+  function actualizarEstadoSorteo() {
+    const banner = document.getElementById('banner-cerrada');
+    const hint = document.getElementById('sel-hint');
+    const grid = document.getElementById('grid');
+    const barra = document.getElementById('barra-flotante');
+    if (sorteoInfo) {
+      banner.classList.add('visible');
+      document.getElementById('banner-num').textContent = sorteoInfo.ganador;
+      document.getElementById('banner-nombre').textContent = sorteoInfo.nombre;
+      document.getElementById('banner-fecha').textContent = '📅 ' + sorteoInfo.fecha + '   🕐 ' + sorteoInfo.hora;
+      hint.style.display = 'none';
+      grid.classList.add('bloqueado');
+      barra.classList.remove('visible');
+      seleccionados.clear();
+    } else {
+      banner.classList.remove('visible');
+      hint.style.display = 'block';
+      grid.classList.remove('bloqueado');
+    }
+  }
+
+  function actualizarBarra() {
+    const barra = document.getElementById('barra-flotante');
+    if (sorteoInfo) { barra.classList.remove('visible'); return; }
+    if (seleccionados.size === 0) { barra.classList.remove('visible'); return; }
+    barra.classList.add('visible');
+    document.getElementById('barra-count').textContent = seleccionados.size;
+    document.getElementById('barra-nums').innerHTML = [...seleccionados].sort((a,b)=>a-b).map(n =>
+      `<div class="barra-chip" onclick="quitarSeleccion(${n})">${n} ✕</div>`
+    ).join('');
+  }
+
+  // ── Click número ──────────────────────────────────────────────
+  function clickNumero(num) {
+    if (sorteoInfo) return;
+    const entry = data[num];
+    if (entry) {
+      const clase = estadoClase(entry);
+      document.getElementById('ver-num').textContent = num;
+      document.getElementById('ver-nombre').textContent = entry.nombre || 'Sin nombre registrado';
+      const badge = document.getElementById('ver-badge');
+      badge.className = 'estado-badge ' + clase;
+      const textos = { porconfirmar:'⏳ Por confirmar', confirmado:'🔵 Confirmado', pagado:'✓ Pagado' };
+      badge.textContent = textos[clase] || clase;
+      const msgs = {
+        porconfirmar: 'El organizador se pondrá en contacto pronto.',
+        confirmado: 'Contacto confirmado — pendiente de pago.',
+        pagado: '¡Pago recibido! Participa en el sorteo.'
+      };
+      document.getElementById('ver-msg').textContent = msgs[clase] || '';
+      document.getElementById('modal-ver').classList.add('open');
+      return;
+    }
+    if (seleccionados.has(num)) {
+      seleccionados.delete(num);
+    } else {
+      if (seleccionados.size >= MAX_SEL) { alert('Máximo ' + MAX_SEL + ' números por persona'); return; }
+      seleccionados.add(num);
+    }
+    renderGrid();
+    actualizarBarra();
+  }
+
+  function quitarSeleccion(num) { seleccionados.delete(num); renderGrid(); actualizarBarra(); }
+  function cancelarSeleccion() { seleccionados.clear(); renderGrid(); actualizarBarra(); }
+
+  function abrirConfirmar() {
+    if (seleccionados.size === 0) return;
+    document.getElementById('resumen-nums').innerHTML = [...seleccionados].sort((a,b)=>a-b).map(n =>
+      `<div style="background:var(--sel-bg);border:1px solid var(--sel-border);color:var(--sel-color);font-weight:900;font-size:16px;padding:8px 14px;border-radius:10px">${n}</div>`
+    ).join('');
+    document.getElementById('input-nombre').value = '';
+    document.getElementById('err-compra').style.display = 'none';
+    document.getElementById('btn-adquirir').disabled = false;
+    document.getElementById('btn-adquirir').textContent = '✓ Confirmar';
+    document.getElementById('modal-comprar').classList.add('open');
+    setTimeout(() => document.getElementById('input-nombre').focus(), 100);
+  }
+
+  function cerrarCompra() { document.getElementById('modal-comprar').classList.remove('open'); }
+  function cerrarVer() { document.getElementById('modal-ver').classList.remove('open'); }
+  function cerrarExito() { document.getElementById('modal-exito').classList.remove('open'); }
+
+  async function adquirirNumeros() {
+    const btn = document.getElementById('btn-adquirir');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const nombre = document.getElementById('input-nombre').value.trim();
+    const nums = [...seleccionados].sort((a,b)=>a-b);
+    try {
+      const updates = {};
+      nums.forEach(n => {
+        updates['boletos/' + n] = { nombre: nombre || '', estado: 'porconfirmar', timestamp: Date.now() };
+      });
+      await update(ref(db), updates);
+      seleccionados.clear();
+      cerrarCompra();
+      actualizarBarra();
+      // Pantalla de éxito
+      document.getElementById('exito-nums').innerHTML = nums.map(n =>
+        `<div style="background:var(--sel-bg);border:1px solid var(--sel-border);color:var(--sel-color);font-family:'Playfair Display',serif;font-size:26px;font-weight:900;padding:10px 16px;border-radius:12px">${n}</div>`
+      ).join('');
+      document.getElementById('exito-nombre').textContent = nombre ? '👤 ' + nombre : '';
+      document.getElementById('modal-exito').classList.add('open');
+    } catch(e) {
+      document.getElementById('err-compra').style.display = 'block';
+      btn.disabled = false; btn.textContent = '✓ Confirmar';
+    }
+  }
+
+  // ── Admin ─────────────────────────────────────────────────────
+  function abrirAdmin() {
+    document.getElementById('input-pass-admin').value = '';
+    document.getElementById('err-admin').style.display = 'none';
+    document.getElementById('modal-admin-login').classList.add('open');
+  }
+
+  function entrarAdmin() {
+    if (document.getElementById('input-pass-admin').value !== PASSWORD) {
+      document.getElementById('err-admin').style.display = 'block'; return;
+    }
+    document.getElementById('modal-admin-login').classList.remove('open');
+    document.getElementById('input-num-editar').value = '';
+    document.getElementById('input-nombre-editar').value = '';
+    document.getElementById('err-editar').style.display = 'none';
+    document.getElementById('ok-editar').style.display = 'none';
+    renderAdminLista();
+    document.getElementById('modal-panel-admin').classList.add('open');
+  }
+
+  function renderAdminLista() {
+    const nums = Object.keys(data).sort((a,b)=>a-b);
+    const c = document.getElementById('admin-lista');
+    if (!nums.length) {
+      c.innerHTML = '<p style="color:var(--text-dim);font-size:12px;text-align:center;padding:12px">Sin números adquiridos</p>';
+      return;
+    }
+    c.innerHTML = nums.map(n => {
+      const e = data[n];
+      const clase = estadoClase(e);
+      const nombre = e.nombre || '<em style="opacity:0.5">Sin nombre</em>';
+      // Calcular tiempo restante si es porconfirmar
+      let tiempoMsg = '';
+      if (clase === 'porconfirmar' && e.timestamp) {
+        const horas = HORAS_LIBERAR - Math.floor((Date.now() - e.timestamp) / 3600000);
+        const adquirido = new Date(e.timestamp).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+        const diaAdq = new Date(e.timestamp).toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit'});
+        tiempoMsg = `<span style="font-size:9px;color:var(--pc-color);opacity:0.8"> · ${diaAdq} ${adquirido} · ${Math.max(0,horas)}h restantes</span>`;
+      }
+      // Botones según estado
+      let btns = '';
+      if (clase === 'porconfirmar') {
+        btns = `<button class="admin-btn confirmar" onclick="cambiarEstado(${n},'confirmado')">🔵 Confirmar</button>
+                <button class="admin-btn liberar" onclick="liberarNum(${n})">✕</button>`;
+      } else if (clase === 'confirmado') {
+        btns = `<button class="admin-btn pagar" onclick="cambiarEstado(${n},'pagado')">💰 Marcar como pagado</button>
+                <button class="admin-btn liberar" onclick="liberarNum(${n})">✕</button>`;
+      } else if (clase === 'pagado') {
+        btns = `<span style="font-size:11px;color:var(--pa-color);font-weight:900">✓ Pagado</span>
+                <button class="admin-btn liberar" onclick="liberarNum(${n})">✕</button>`;
+      }
+      return `<div class="admin-item">
+        <div class="admin-num ${clase}">${n}</div>
+        <div style="flex:1;min-width:0">
+          <div style="color:var(--bright);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nombre}${tiempoMsg}</div>
+        </div>
+        <div style="display:flex;gap:4px">${btns}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function cambiarEstado(num, nuevoEstado) {
+    await update(ref(db, 'boletos/' + num), { estado: nuevoEstado });
+    renderAdminLista();
+  }
+
+  async function liberarNum(num) {
+    await remove(ref(db, 'boletos/' + num));
+    renderAdminLista();
+  }
+
+  async function editarNombre() {
+    const num = parseInt(document.getElementById('input-num-editar').value);
+    const nombre = document.getElementById('input-nombre-editar').value.trim();
+    document.getElementById('ok-editar').style.display = 'none';
+    if (!num || !data[num]) { document.getElementById('err-editar').style.display = 'block'; return; }
+    document.getElementById('err-editar').style.display = 'none';
+    await update(ref(db, 'boletos/' + num), { nombre });
+    document.getElementById('input-num-editar').value = '';
+    document.getElementById('input-nombre-editar').value = '';
+    document.getElementById('ok-editar').style.display = 'block';
+    renderAdminLista();
+  }
+
+  async function confirmarReset() {
+    if (!confirm('¿Seguro? Borrará TODOS los boletos y desbloqueará el tablero.')) return;
+    await remove(rifaRef);
+    await remove(sorteoRef);
+    document.getElementById('modal-panel-admin').classList.remove('open');
+  }
+
+  // ── Lista pública ─────────────────────────────────────────────
+  function abrirLista() {
+    const nums = Object.keys(data).sort((a,b)=>a-b);
+    const c = document.getElementById('lista-content');
+    if (!nums.length) {
+      c.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:20px">Sin números adquiridos aún</p>';
+    } else {
+      const textos = { porconfirmar:'⏳ Por confirmar', confirmado:'🔵 Confirmado', pagado:'✓ Pagado' };
+      const colores = { porconfirmar:'var(--pc-color)', confirmado:'var(--co-color)', pagado:'var(--pa-color)' };
+      c.innerHTML = nums.map(n => {
+        const e = data[n];
+        const clase = estadoClase(e);
+        return `<div class="lista-item">
+          <div class="lista-num ${clase}">${n}</div>
+          <div style="flex:1">
+            <div style="color:var(--bright);font-size:13px">${e.nombre || '<em style="color:var(--text-dim)">Sin nombre</em>'}</div>
+            <div style="font-size:11px;color:${colores[clase]}">${textos[clase]||''}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    document.getElementById('modal-lista').classList.add('open');
+  }
+
+  // ── Sorteo ────────────────────────────────────────────────────
+  function abrirSorteo() {
+    const pagados = Object.keys(data).filter(n => data[n] && data[n].estado === 'pagado');
+    document.getElementById('sorteo-count').textContent = pagados.length + ' número(s) participando';
+    document.getElementById('input-pass-sorteo').value = '';
+    document.getElementById('err-sorteo').style.display = 'none';
+    ['sorteo-inicio','sorteo-cuenta','sorteo-girando','sorteo-ganador'].forEach((id,i) => {
+      document.getElementById(id).style.display = i===0 ? 'block' : 'none';
+    });
+    document.getElementById('modal-sorteo').classList.add('open');
+  }
+
+  function cerrarSorteo() { document.getElementById('modal-sorteo').classList.remove('open'); }
+
+  function iniciarSorteo() {
+    if (document.getElementById('input-pass-sorteo').value !== PASSWORD) {
+      document.getElementById('err-sorteo').style.display = 'block'; return;
+    }
+    const pagados = Object.keys(data).filter(n => data[n] && data[n].estado === 'pagado');
+    if (!pagados.length) { alert('No hay números pagados aún'); return; }
+    document.getElementById('err-sorteo').style.display = 'none';
+    document.getElementById('sorteo-inicio').style.display = 'none';
+    document.getElementById('sorteo-cuenta').style.display = 'block';
+    const ganador = pagados[Math.floor(Math.random() * pagados.length)];
+    let cuenta = 10;
+    const el = document.getElementById('cuenta-num');
+    function tick() {
+      el.style.animation = 'none'; void el.offsetWidth;
+      el.textContent = cuenta; el.className = 'cuenta-show';
+      if (cuenta === 0) { setTimeout(() => iniciarGiro(ganador, pagados), 900); return; }
+      cuenta--; setTimeout(tick, 900);
+    }
+    tick();
+  }
+
+  function iniciarGiro(ganador, pagados) {
+    document.getElementById('sorteo-cuenta').style.display = 'none';
+    document.getElementById('sorteo-girando').style.display = 'block';
+    const el = document.getElementById('num-girando');
+    let intervalo = 55, iter = 0, total = 40;
+    function girar() {
+      el.textContent = pagados[Math.floor(Math.random() * pagados.length)];
+      iter++;
+      if (iter < total) { if (iter > 22) intervalo = 90+(iter-22)*20; setTimeout(girar, intervalo); }
+      else { setTimeout(() => revelarGanador(ganador), 300); }
+    }
+    girar();
+  }
+
+  async function revelarGanador(ganador) {
+    document.getElementById('sorteo-girando').style.display = 'none';
+    document.getElementById('sorteo-ganador').style.display = 'block';
+    const el = document.getElementById('winner-num');
+    el.textContent = ganador;
+    el.style.animation = 'none'; void el.offsetWidth;
+    el.style.animation = 'pulsar 0.7s ease';
+    const nombreGanador = data[ganador]?.nombre || 'Sin nombre registrado';
+    document.getElementById('winner-name').textContent = nombreGanador;
+    const ahora = new Date();
+    const fecha = ahora.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const hora = ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('winner-fecha').innerHTML = '📅 ' + fecha + '<br>🕐 ' + hora;
+    await set(sorteoRef, { ganador, nombre: nombreGanador, fecha, hora });
+  }
+
+  // Globales
+  window.clickNumero = clickNumero;
+  window.quitarSeleccion = quitarSeleccion;
+  window.cancelarSeleccion = cancelarSeleccion;
+  window.abrirConfirmar = abrirConfirmar;
+  window.cerrarCompra = cerrarCompra;
+  window.cerrarVer = cerrarVer;
+  window.cerrarExito = cerrarExito;
+  window.adquirirNumeros = adquirirNumeros;
+  window.abrirAdmin = abrirAdmin;
+  window.entrarAdmin = entrarAdmin;
+  window.cambiarEstado = cambiarEstado;
+  window.liberarNum = liberarNum;
+  window.editarNombre = editarNombre;
+  window.confirmarReset = confirmarReset;
+  window.abrirLista = abrirLista;
+  window.abrirSorteo = abrirSorteo;
+  window.cerrarSorteo = cerrarSorteo;
+  window.iniciarSorteo = iniciarSorteo;
+</script>
 </body>
 </html>
